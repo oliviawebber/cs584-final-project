@@ -1,25 +1,9 @@
 from collections import deque
 from copy import copy
+from util.DataStructure import DataStructure
 
 class Boykov_Kolmogorov:
-    class Data_Structure:
-        def __init__(self, iterable=[]):
-            self.ds = deque(iterable)
-            self.get = self.ds.popleft
-            self.add = self.ds.append
-            self.count = self.ds.count
-            self.remove = self.ds.remove
-
-        def length(self):
-            return len(self.ds)
-
-        def __str__(self):
-            return self.ds.__str__()
-
-        def __getitem__(self, item):
-            return self.ds[item]
-
-    def __init__(self, g):
+    def __init__(self, g, storage_type):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
@@ -38,8 +22,8 @@ class Boykov_Kolmogorov:
 
         self.S = set([g.get_source()])
         self.T = set([g.get_target()])
-        self.A = self.Data_Structure([g.get_source(), g.get_target()])
-        self.O = self.Data_Structure()
+        self.A = DataStructure(storage_type, [g.get_source(), g.get_target()])
+        self.O = DataStructure(storage_type)
 
     def path(self, s_node, t_node):
         s_path = [s_node]
@@ -128,10 +112,7 @@ class Boykov_Kolmogorov:
                             self.parent[q] = None
                             self.O.add(q)
                 current_tree.remove(p)
-                try:
-                    self.A.remove(p)
-                except:
-                    pass
+                self.A.remove(p)
 
 
 
