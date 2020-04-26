@@ -1,0 +1,4 @@
+*.pdf
+*.pycache
+*.gv
+*.pyc
