@@ -1,9 +1,9 @@
 from collections import deque
 from copy import copy
-from util.DataStructure import DataStructure
+from util.data_structure import DataStructure
 
 class Boykov_Kolmogorov:
-    def __init__(self, g, storage_type):
+    def __init__(self, g, active_storage_type, orphan_storage_type):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
@@ -22,10 +22,11 @@ class Boykov_Kolmogorov:
 
         self.S = set([g.get_source()])
         self.T = set([g.get_target()])
-        self.A = DataStructure(storage_type, [g.get_source(), g.get_target()])
-        self.O = DataStructure(storage_type)
+        self.A = DataStructure(active_storage_type, [g.get_source(), g.get_target()])
+        self.O = DataStructure(orphan_storage_type)
 
     def path(self, s_node, t_node):
+        print(self.parent)
         s_path = [s_node]
         s_start = self.g.get_source()
         p = s_path[0]
@@ -45,7 +46,7 @@ class Boykov_Kolmogorov:
 
     def grow(self):
         while self.A.length():
-            p = self.A[0]
+            p = self.A.get()
             if p in self.S:
                 neighbors = self.g_res.get_out_neighbors(p)
                 current_tree = self.S
@@ -61,11 +62,11 @@ class Boykov_Kolmogorov:
                         self.parent[q] = p
                         self.A.add(q)
                     if q in other_tree:
+                        self.A.add(p)
                         if current_tree == self.S:
                             return self.path(p, q)
                         else:
                             return self.path(q, p)
-            self.A.get()
         return None
 
     def augment(self, P):
@@ -112,9 +113,10 @@ class Boykov_Kolmogorov:
                             self.parent[q] = None
                             self.O.add(q)
                 current_tree.remove(p)
-                self.A.remove(p)
-
-
+                try:
+                    self.A.remove(p)
+                except:
+                    pass
 
     def max_flow(self):
         while True:

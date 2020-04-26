@@ -27,14 +27,42 @@ class Queue(SingleDataStructure):
         self.add = self.ds.append
 
 class MultiDataStructure:
-    def __init__(self):
-        pass
+    def __init__(self, iterable):
+        self.active_ds = deque(iterable)
+        self.inactive_ds = deque()
+
+    def remove(self, item):
+        try:
+            self.active_ds.remove(item)
+        except:
+            pass
+        try:
+            self.inactive_ds.remove(item)
+        except:
+            pass
+
+    def get(self):
+        try:
+            return self.active_ds.popleft()
+        except:
+            self.active_ds, self.inactive_ds = self.inactive_ds, self.active_ds
+            return self.get()
+
+    def __str__(self):
+        return self.active_ds.__str__() + self.inactive_ds.__str__()
+
+    def length(self):
+        return len(self.active_ds) + len(self.inactive_ds)
 
 class MultiStack(MultiDataStructure):
-    pass
+    def __init__(self, iterable):
+        super().__init__(iterable)
+        self.add = self.inactive_ds.appendleft
 
 class MultiQueue(MultiDataStructure):
-    pass
+    def __init__(self, iterable):
+        super().__init__(iterable)
+        self.add = self.inactive_ds.append
 
 class DataStructure:
     def __new__(self, storage_type=Storage.queue, iterable=[]):
