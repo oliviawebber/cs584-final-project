@@ -56,6 +56,12 @@ class Graph:
             return
         return [(i+1, self.adjacency_matrix[i][node]) for i in range(self.size) if self.adjacency_matrix[i][node] >= 0]
 
+    def set_max_flow(self, mf):
+        self.max_flow = mf
+
+    def get_max_flow(self):
+        return self.max_flow
+
     @staticmethod
     def read_graph(file_name):
         with open(file_name, 'r') as f:
@@ -63,12 +69,14 @@ class Graph:
                 num_vertices = int(f.readline())
                 source = int(f.readline())
                 target = int(f.readline())
+                max_flow = int(f.readline())
             except:
                 print("Bad file, check formatting\n")
 
             g = Graph(num_vertices)
             g.set_source(source)
             g.set_target(target)
+            g.set_max_flow(max_flow)
             for line in f:
                 try:
                     edge = [int(x) for x in line.split(" ")]
