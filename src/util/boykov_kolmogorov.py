@@ -26,7 +26,6 @@ class Boykov_Kolmogorov:
         self.O = DataStructure(orphan_storage_type)
 
     def path(self, s_node, t_node):
-        print(self.parent)
         s_path = [s_node]
         s_start = self.g.get_source()
         p = s_path[0]
@@ -71,7 +70,7 @@ class Boykov_Kolmogorov:
 
     def augment(self, P):
         pairs = [(P[i], P[i+1]) for i in range(len(P)-1)]
-        delta = min([self.g.get_edge(p, q) for p,q in pairs])
+        delta = min([self.g_res.get_edge(p, q) for p,q in pairs])
         self.flow += delta
         for p, q in pairs:
             new_capacity = self.g_res.get_edge(p, q) - delta
@@ -108,15 +107,14 @@ class Boykov_Kolmogorov:
                 for q, capacity in neighbors:
                     if q in current_tree:
                         if capacity > 0:
-                            self.A.add(q)
+                            if q not in self.A:
+                                self.A.add(q)
                         if self.parent[q] == p:
                             self.parent[q] = None
                             self.O.add(q)
                 current_tree.remove(p)
-                try:
+                if p in self.A:
                     self.A.remove(p)
-                except:
-                    pass
 
     def max_flow(self):
         while True:

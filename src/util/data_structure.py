@@ -16,6 +16,9 @@ class SingleDataStructure:
     def length(self):
         return len(self.ds)
 
+    def __iter__(self):
+        return iter(self.ds)
+
 class Stack(SingleDataStructure):
     def __init__(self, iterable):
         super().__init__(iterable)
@@ -32,14 +35,10 @@ class MultiDataStructure:
         self.inactive_ds = deque()
 
     def remove(self, item):
-        try:
+        if item in self.active_ds:
             self.active_ds.remove(item)
-        except:
-            pass
-        try:
+        if item in self.inactive_ds:
             self.inactive_ds.remove(item)
-        except:
-            pass
 
     def get(self):
         try:
@@ -53,6 +52,11 @@ class MultiDataStructure:
 
     def length(self):
         return len(self.active_ds) + len(self.inactive_ds)
+
+    def __iter__(self):
+        return iter(self.active_ds + self.inactive_ds)
+
+
 
 class MultiStack(MultiDataStructure):
     def __init__(self, iterable):
