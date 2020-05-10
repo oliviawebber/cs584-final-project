@@ -100,9 +100,11 @@ class Boykov_Kolmogorov:
             else:
                 current_tree = self.T
                 neighbors = self.g_res.get_out_neighbors(p)
+            new_parent = None
             for q, capacity in neighbors:
                 if q in current_tree and capacity > 0 and self.rooted(q):
-                    self.parent[p] = q
+                    new_parent = q
+            self.parent[p] = new_parent
             if self.parent[p] == None:
                 for q, capacity in neighbors:
                     if q in current_tree:
