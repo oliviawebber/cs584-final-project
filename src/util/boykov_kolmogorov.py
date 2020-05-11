@@ -3,7 +3,7 @@ from copy import copy
 from util.data_structure import DataStructure
 
 class Boykov_Kolmogorov:
-    def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info):
+    def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info, perfect_info):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
@@ -27,6 +27,8 @@ class Boykov_Kolmogorov:
         self.T = set([g.get_target()])
         self.A = DataStructure(active_storage_type, [g.get_source(), g.get_target()])
         self.O = DataStructure(orphan_storage_type)
+
+        self.perfect_info = perfect_info
 
     def set_distance_to_origin(self, n, distance):
         q = deque([n])
@@ -83,8 +85,10 @@ class Boykov_Kolmogorov:
                         current_tree.add(q)
                         self.parent[q] = p
                         if self.store_parent_info:
-                            #self.set_distance_to_origin(q, self.parent_info[p] + 1)
-                            self.parent_info[q] = self.parent_info[p] + 1
+                            if self.perfect_info:
+                                self.set_distance_to_origin(q, self.parent_info[p] + 1)
+                            else:
+                                self.parent_info[q] = self.parent_info[p] + 1
                         self.A.add(q)
                     if q in other_tree:
                         self.A.add(p)
@@ -149,8 +153,8 @@ class Boykov_Kolmogorov:
                         new_parent = q
                         break
             self.parent[p] = new_parent
-            #if self.store_parent_info and new_parent != None:
-                #self.set_distance_to_origin(p, self.parent_info[new_parent] + 1)
+            if self.store_parent_info and self.perfect_info and new_parent != None:
+                self.set_distance_to_origin(p, self.parent_info[new_parent] + 1)
             if self.parent[p] == None:
                 for q, capacity in neighbors:
                     if q in current_tree:
@@ -159,8 +163,8 @@ class Boykov_Kolmogorov:
                                 self.A.add(q)
                         if self.parent[q] == p:
                             self.parent[q] = None
-                            #if self.store_parent_info:
-                            #    self.set_distance_to_origin(q, -1)
+                            if self.store_parent_info and self.perfect_info:
+                                self.set_distance_to_origin(q, -1)
                             self.O.add(q)
                 current_tree.remove(p)
                 if p in self.A:
