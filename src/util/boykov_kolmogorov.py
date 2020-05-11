@@ -3,7 +3,7 @@ from copy import copy
 from util.data_structure import DataStructure
 
 class Boykov_Kolmogorov:
-    def __init__(self, g, active_storage_type, orphan_storage_type):
+    def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
@@ -19,11 +19,33 @@ class Boykov_Kolmogorov:
 
         self.flow = 0
         self.parent = {g.get_source(): None, g.get_target(): None}
+        self.store_parent_info = store_parent_info
+        if self.store_parent_info:
+            self.parent_info = {g.get_source(): 0, g.get_target(): 0}
 
         self.S = set([g.get_source()])
         self.T = set([g.get_target()])
         self.A = DataStructure(active_storage_type, [g.get_source(), g.get_target()])
         self.O = DataStructure(orphan_storage_type)
+
+    def set_distance_to_origin(self, n, distance):
+        q = deque([n])
+        self.parent_info[n] = distance
+        visited = set([n])
+        if n in self.S:
+            current_tree = self.S
+        else:
+            current_tree = self.T
+        while len(q) != 0:
+            current_node = q.pop()
+            for k, v in self.parent.items():
+                if v == current_node and k in current_tree and k not in visited:
+                    q.appendleft(k)
+                    visited.add(k)
+                    if distance == -1:
+                        self.parent_info[k] = -1
+                    else:
+                        self.parent_info[k] = self.parent_info[current_node] + 1
 
     def path(self, s_node, t_node):
         s_path = [s_node]
@@ -59,6 +81,9 @@ class Boykov_Kolmogorov:
                     if q not in self.S and q not in self.T:
                         current_tree.add(q)
                         self.parent[q] = p
+                        if self.store_parent_info:
+                            #self.set_distance_to_origin(q, self.parent_info[p] + 1)
+                            self.parent_info[q] = self.parent_info[p] + 1
                         self.A.add(q)
                     if q in other_tree:
                         self.A.add(p)
@@ -79,17 +104,28 @@ class Boykov_Kolmogorov:
             self.g_res.add_edge(q, p, new_residual)
             if p in self.S and q in self.S and new_capacity == 0:
                 self.parent[q] = None
+                if self.store_parent_info:
+                    self.set_distance_to_origin(q, -1)
                 self.O.add(q)
             if p in self.T and q in self.T and new_capacity == 0:
                 self.parent[p] = None
+                if self.store_parent_info:
+                    self.set_distance_to_origin(q, -1)
                 self.O.add(p)
 
     def rooted(self, n):
         source = self.g.get_source()
         target = self.g.get_target()
-        while n != None and n != source and n != target:
-            n = self.parent[n]
-        return n != None
+        if self.store_parent_info:
+            try:
+                distance_to_parent = self.parent_info[n]
+                return distance_to_parent != -1
+            except:
+                return False
+        else:
+            while n != None and n != source and n != target:
+                n = self.parent[n]
+            return n != None
 
     def adopt(self):
         while self.O.length():
@@ -103,8 +139,17 @@ class Boykov_Kolmogorov:
             new_parent = None
             for q, capacity in neighbors:
                 if q in current_tree and capacity > 0 and self.rooted(q):
-                    new_parent = q
+                    if self.store_parent_info:
+                        if new_parent == None:
+                            new_parent = q
+                        if self.parent_info[q] < self.parent_info[new_parent] and self.parent_info[q] != -1:
+                            new_parent = q
+                    else:
+                        new_parent = q
+                        break
             self.parent[p] = new_parent
+            #if self.store_parent_info and new_parent != None:
+                #self.set_distance_to_origin(p, self.parent_info[new_parent] + 1)
             if self.parent[p] == None:
                 for q, capacity in neighbors:
                     if q in current_tree:
@@ -113,6 +158,8 @@ class Boykov_Kolmogorov:
                                 self.A.add(q)
                         if self.parent[q] == p:
                             self.parent[q] = None
+                            #if self.store_parent_info:
+                            #    self.set_distance_to_origin(q, -1)
                             self.O.add(q)
                 current_tree.remove(p)
                 if p in self.A:
