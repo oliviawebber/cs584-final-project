@@ -38,14 +38,15 @@ class Boykov_Kolmogorov:
             current_tree = self.T
         while len(q) != 0:
             current_node = q.pop()
-            for k, v in self.parent.items():
-                if v == current_node and k in current_tree and k not in visited:
-                    q.appendleft(k)
-                    visited.add(k)
+            children = [k for k, v in self.parent.items() if v == current_node]
+            for child in children:
+                if child not in visited:
+                    q.appendleft(child)
+                    visited.add(child)
                     if distance == -1:
-                        self.parent_info[k] = -1
+                        self.parent_info[child] = -1
                     else:
-                        self.parent_info[k] = self.parent_info[current_node] + 1
+                        self.parent_info[child] = self.parent_info[current_node] + 1
 
     def path(self, s_node, t_node):
         s_path = [s_node]
