@@ -3,7 +3,7 @@ from copy import copy
 from util.data_structure import DataStructure
 
 class Boykov_Kolmogorov:
-    def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info, perfect_info):
+    def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info, perfect_info, store_child_info):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
@@ -23,6 +23,12 @@ class Boykov_Kolmogorov:
         if self.store_parent_info:
             self.parent_info = {g.get_source(): 0, g.get_target(): 0}
 
+        self.store_child_info = store_child_info
+        if self.store_child_info:
+            self.child_info = dict()
+            for i in range(1, self.g.dim()+1):
+                self.child_info[i] = set()
+
         self.S = set([g.get_source()])
         self.T = set([g.get_target()])
         self.A = DataStructure(active_storage_type, [g.get_source(), g.get_target()])
@@ -40,7 +46,10 @@ class Boykov_Kolmogorov:
             current_tree = self.T
         while len(q) != 0:
             current_node = q.pop()
-            children = [k for k, v in self.parent.items() if v == current_node]
+            if self.store_child_info:
+                children = self.child_info[current_node]
+            else:
+                children = [k for k, v in self.parent.items() if v == current_node]
             for child in children:
                 if child not in visited:
                     q.appendleft(child)
@@ -84,6 +93,8 @@ class Boykov_Kolmogorov:
                     if q not in self.S and q not in self.T:
                         current_tree.add(q)
                         self.parent[q] = p
+                        if self.store_child_info:
+                            self.child_info[p].add(q)
                         if self.store_parent_info:
                             if self.perfect_info:
                                 self.set_distance_to_origin(q, self.parent_info[p] + 1)
@@ -108,14 +119,18 @@ class Boykov_Kolmogorov:
             new_residual = self.g_res.get_edge(q,p) + delta
             self.g_res.add_edge(q, p, new_residual)
             if p in self.S and q in self.S and new_capacity == 0:
+                if self.store_child_info:
+                    self.child_info[self.parent[q]].remove(q)
                 self.parent[q] = None
                 if self.store_parent_info:
                     self.set_distance_to_origin(q, -1)
                 self.O.add(q)
             if p in self.T and q in self.T and new_capacity == 0:
+                if self.store_child_info:
+                    self.child_info[self.parent[p]].remove(p)
                 self.parent[p] = None
                 if self.store_parent_info:
-                    self.set_distance_to_origin(q, -1)
+                    self.set_distance_to_origin(p, -1)
                 self.O.add(p)
 
     def rooted(self, n):
@@ -155,6 +170,8 @@ class Boykov_Kolmogorov:
             self.parent[p] = new_parent
             if self.store_parent_info and self.perfect_info and new_parent != None:
                 self.set_distance_to_origin(p, self.parent_info[new_parent] + 1)
+            if self.store_child_info and new_parent != None:
+                self.child_info[new_parent].add(p)
             if self.parent[p] == None:
                 for q, capacity in neighbors:
                     if q in current_tree:
@@ -162,6 +179,8 @@ class Boykov_Kolmogorov:
                             if q not in self.A:
                                 self.A.add(q)
                         if self.parent[q] == p:
+                            if self.store_child_info:
+                                self.child_info[p].remove(q)
                             self.parent[q] = None
                             if self.store_parent_info and self.perfect_info:
                                 self.set_distance_to_origin(q, -1)
