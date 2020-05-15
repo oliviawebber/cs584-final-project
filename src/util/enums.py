@@ -1,5 +1,6 @@
 from enum import Enum
-
+# Defines an enumertor for use in selecting the data structure used by the
+# Boykov-Kolmogorov algorithm"
 class Storage(Enum):
     stack = 1
     queue = 2
