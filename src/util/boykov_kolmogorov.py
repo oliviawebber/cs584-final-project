@@ -1,12 +1,34 @@
 from collections import deque
 from copy import copy
 from util.data_structure import DataStructure
+# This class implements the Boykov-Kolmogorov algorithm for Min-Cut/Max-Flow.
+# The psuedo-code this algorithm is based on is found in the paper An
+# Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy Minimization
+# in Vision by Yuri Boykov and Vladimir Kolmogorov
+
+# g: the graph we want to find the max flow of
+# active_storage_type: the data structure that we should use for the set of active
+#   nodes in the algorithm
+# orphan_storage_type: the data structure that we should use for the set of
+#   orphaned nodes in the algorithm
+# store_parent_info: a boolean value indicating if we should store information
+#   about how far a parent node is from the source or target node, depending
+#   on if it is in the source tree or target tree
+# perfect_info: a boolean value indicating whether the information stored when
+#   store_parent_info is True should be perfect. If True, we gurantee that the
+#   information stored about a parent's distance to a root node is always optimal
+#   if false, we only gurantee that this information is correct but not optimal
+# store_child_info: a boolean value indicating whether we should be a set of
+#   child nodes for each parent. If true, each parent has immediate access
+#   to its set of children. If false, the parent dictionary has to be used
+#   to reconstruct this information.
 
 class Boykov_Kolmogorov:
     def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info, perfect_info, store_child_info):
         self.g = g
         self.g_res = copy(g)
         sz = self.g_res.dim()
+        # Setup the reverse edges in our residual graph
         for i in range(1, sz + 1):
             for j in range(1, sz + 1):
                 forward_edge = self.g_res.get_edge(i, j)
@@ -19,6 +41,7 @@ class Boykov_Kolmogorov:
 
         self.flow = 0
         self.parent = {g.get_source(): None, g.get_target(): None}
+
         self.store_parent_info = store_parent_info
         if self.store_parent_info:
             self.parent_info = {g.get_source(): 0, g.get_target(): 0}
@@ -29,6 +52,8 @@ class Boykov_Kolmogorov:
             for i in range(1, self.g.dim()+1):
                 self.child_info[i] = set()
 
+        # S and T are the sets of nodes belonging to the trees rooted by the source
+        # and target nodes respectively
         self.S = set([g.get_source()])
         self.T = set([g.get_target()])
         self.A = DataStructure(active_storage_type, [g.get_source(), g.get_target()])
@@ -36,6 +61,9 @@ class Boykov_Kolmogorov:
 
         self.perfect_info = perfect_info
 
+    # Sets the distance from node n to the root of the tree it belongs to to
+    # distance. We perform the update by doing BFS from n to any nodes that are
+    # flagged as n's children
     def set_distance_to_origin(self, n, distance):
         q = deque([n])
         self.parent_info[n] = distance
@@ -46,6 +74,8 @@ class Boykov_Kolmogorov:
             current_tree = self.T
         while len(q) != 0:
             current_node = q.pop()
+            # If we store the child set, use it. Otherwise we need to construct
+            # it from the parent dictionary
             if self.store_child_info:
                 children = self.child_info[current_node]
             else:
@@ -54,11 +84,16 @@ class Boykov_Kolmogorov:
                 if child not in visited:
                     q.appendleft(child)
                     visited.add(child)
+                    # -1 is used as a flag of invalid distance so it should be
+                    # set directly, otherwise the child is now 1 step further
+                    # than its parent
                     if distance == -1:
                         self.parent_info[child] = -1
                     else:
                         self.parent_info[child] = self.parent_info[current_node] + 1
 
+    # Returns the path from source to target, where s_node and t_node provide
+    # the edge linking the S set section of the path with the T set section
     def path(self, s_node, t_node):
         s_path = [s_node]
         s_start = self.g.get_source()
@@ -77,31 +112,43 @@ class Boykov_Kolmogorov:
         s_path.reverse()
         return s_path + t_path
 
+    # Both trees S and T attempt to grow by adding active nodes to their sets
+    # this process repeats until the two tree encounter one another
     def grow(self):
         while self.A.length():
             p = self.A.get()
             if p in self.S:
+                # if p is in the source tree, we look at its outgoing neighbors
+                # to find new nodes
                 neighbors = self.g_res.get_out_neighbors(p)
                 current_tree = self.S
                 other_tree = self.T
             else:
+                # if p is in the target tree, we look at its incoming neighbors
+                # to find new nodes
                 neighbors = self.g_res.get_in_neighbors(p)
                 current_tree = self.T
                 other_tree = self.S
             for q, capacity in neighbors:
                 if capacity > 0:
+                    # Found a free node with spare capacity, so add it to our tree
                     if q not in self.S and q not in self.T:
                         current_tree.add(q)
                         self.parent[q] = p
                         if self.store_child_info:
                             self.child_info[p].add(q)
                         if self.store_parent_info:
+                            # if we store perfect info, this update may need to
+                            # be pushed to all children of q
                             if self.perfect_info:
                                 self.set_distance_to_origin(q, self.parent_info[p] + 1)
                             else:
                                 self.parent_info[q] = self.parent_info[p] + 1
                         self.A.add(q)
+                    # Encountered the other tree, so return an augmenting path
                     if q in other_tree:
+                        # we may not have fully explored p, so it will still
+                        # be active
                         self.A.add(p)
                         if current_tree == self.S:
                             return self.path(p, q)
@@ -109,15 +156,19 @@ class Boykov_Kolmogorov:
                             return self.path(q, p)
         return None
 
+    # Given an augmenting path P, push as much flow across this path as we can
+    # Turn any nodes that are part of saturated edges into orphans
     def augment(self, P):
         pairs = [(P[i], P[i+1]) for i in range(len(P)-1)]
         delta = min([self.g_res.get_edge(p, q) for p,q in pairs])
         self.flow += delta
         for p, q in pairs:
+            # push our new flow along edges
             new_capacity = self.g_res.get_edge(p, q) - delta
             self.g_res.add_edge(p, q, new_capacity)
             new_residual = self.g_res.get_edge(q,p) + delta
             self.g_res.add_edge(q, p, new_residual)
+            # In source tree, the target of an edge is the orphan
             if p in self.S and q in self.S and new_capacity == 0:
                 if self.store_child_info:
                     self.child_info[self.parent[q]].remove(q)
@@ -125,6 +176,7 @@ class Boykov_Kolmogorov:
                 if self.store_parent_info:
                     self.set_distance_to_origin(q, -1)
                 self.O.add(q)
+            # In target tree, the source side of an edge is the orphan
             if p in self.T and q in self.T and new_capacity == 0:
                 if self.store_child_info:
                     self.child_info[self.parent[p]].remove(p)
@@ -133,6 +185,8 @@ class Boykov_Kolmogorov:
                     self.set_distance_to_origin(p, -1)
                 self.O.add(p)
 
+    # Checks whether a node n has a connection back to the root of a tree,
+    # either source or target
     def rooted(self, n):
         source = self.g.get_source()
         target = self.g.get_target()
