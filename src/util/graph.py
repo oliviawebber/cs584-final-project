@@ -1,4 +1,6 @@
-
+# Defines a class to implement a Graph G = (V,E), where V and E are a vertex
+# and an edge set. Our implementation assumes nodes labels of the form i where
+# i is a number in [1,n]. We implement the edge set using an adjacency matrix.
 class Graph:
     def __init__(self, n):
         self.adjacency_matrix = [[-1 for x in range(n)] for x in range(n)]
@@ -25,12 +27,12 @@ class Graph:
         end -= 1
 
         if start < 0 or start >= self.size or end < 0 or end >= self.size:
-            return
+            return None
         return self.adjacency_matrix[start][end]
 
     def set_source(self, n):
         if n < 1 or n > self.size:
-            return
+            return None
         self.source = n
 
     def get_source(self):
@@ -38,7 +40,7 @@ class Graph:
 
     def set_target(self, n):
         if n < 1 or n > self.size:
-            return
+            return None
         self.target = n
 
     def get_target(self):
@@ -87,13 +89,14 @@ class Graph:
         return g
 
     def write_graph(self, file_name):
+        # write graph using .dot file format, used for debugging graphs
         with open(file_name, 'w') as f:
             f.write("digraph G {\n")
             for i in range(self.size):
                 for j in range(self.size):
                     if self.adjacency_matrix[i][j] > 0:
-                        f.write('\t' + str(i+1) + ' -> ' + str(j+1) + ' [label="' + str(self.adjacency_matrix[i][j]) + '"];\n')
-            f.write('\t' + str(self.source) + ' [label="source"];\n')
-            f.write('\t' + str(self.target) + ' [label="target"];\n')
+                        f.write('\t%i -> %i [label="%i"];\n' % (i+1, j+1, self.adjacency_matrix[i][j]))
+            f.write('\t%i [label="source"];\n' % self.source)
+            f.write('\t%i [label="target"];\n' % self.target)
             f.write("}")
 
