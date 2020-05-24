@@ -58,6 +58,9 @@ class Graph:
             return
         return [(i+1, self.adjacency_matrix[i][node]) for i in range(self.size) if self.adjacency_matrix[i][node] >= 0]
 
+    def get_intermediate_nodes(self):
+        return set(range(1, self.size + 1)) - set([self.source, self.target])
+
     def set_max_flow(self, mf):
         self.max_flow = mf
 
