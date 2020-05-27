@@ -1,8 +1,9 @@
 from collections import deque
+from copy import deepcopy
 
 class Goldberg_Tarjan:
     def __init__(self,g):
-        self.g = g
+        self.g = deepcopy(g)
         self.flow = dict()
         self.source = g.get_source()
         self.target = g.get_target()

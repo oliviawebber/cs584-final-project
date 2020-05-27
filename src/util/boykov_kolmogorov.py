@@ -1,5 +1,5 @@
 from collections import deque
-from copy import copy
+from copy import deepcopy
 from util.data_structure import DataStructure
 # This class implements the Boykov-Kolmogorov algorithm for Min-Cut/Max-Flow.
 # The psuedo-code this algorithm is based on is found in the paper An
@@ -25,8 +25,8 @@ from util.data_structure import DataStructure
 
 class Boykov_Kolmogorov:
     def __init__(self, g, active_storage_type, orphan_storage_type, store_parent_info, perfect_info, store_child_info):
-        self.g = g
-        self.g_res = copy(g)
+        self.g = deepcopy(g)
+        self.g_res = deepcopy(g)
         sz = self.g_res.dim()
         # Setup the reverse edges in our residual graph
         for i in range(1, sz + 1):

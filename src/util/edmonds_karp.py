@@ -1,13 +1,13 @@
 from collections import deque
-from copy import copy
+from copy import deepcopy
 # This class implements the Edmonds Karp algorithm for Max-Flow/Min-Cut. It is
 # based off the psuedo-code for this algorithm found in Introduction to Algorithms
 # 3rd Edition by Cormen, Leiserson, Rivest, Stein.
 
 class Edmonds_Karp:
     def __init__(self, g):
-        self.g = g
-        self.g_res = copy(g)
+        self.g = deepcopy(g)
+        self.g_res = deepcopy(g)
         sz = self.g_res.dim()
         # Initialize backwards edges in the residual graph
         for i in range(1, sz + 1):
