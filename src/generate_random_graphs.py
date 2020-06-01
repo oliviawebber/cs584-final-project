@@ -6,9 +6,9 @@ random.seed(RANDOM_SEED)
 # This file generates all of the test graphs that are used for testing the
 # empirical performance of the Boykov-Kolmogorov algorithm
 
-capacities = [1, 5, 10, 50, 100]
+capacities = [1, 10, 100]
 number_of_nodes = list(range(500, 1000, 100))
-number_of_tests = 30
+number_of_tests = 10
 
 for C in capacities:
     for V in number_of_nodes:
