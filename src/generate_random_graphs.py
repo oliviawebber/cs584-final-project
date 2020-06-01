@@ -21,7 +21,9 @@ for C in capacities:
             for test_number in range(number_of_tests):
                 with open('../test_graphs/test%i-c%i-n%i-e%i.graph' % (test_number, C, V, E), 'w') as f:
                     source = random.randint(1, V)
-                    target = random.randint(1, V)
+                    target = source
+                    while target == source:
+                        target = random.randint(1, V)
                     f.write('%i\n%i\n%i\n' % (V, source, target))
 
                     # We take a random sample of all possible edges to form
