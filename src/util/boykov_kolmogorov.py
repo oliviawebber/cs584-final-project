@@ -250,4 +250,5 @@ class Boykov_Kolmogorov:
                 break
             self.augment(P)
             self.adopt()
+        assert self.flow == self.g.get_max_flow()
         return self.flow

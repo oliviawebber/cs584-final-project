@@ -70,4 +70,5 @@ class Edmonds_Karp:
             if p is None:
                 break
             self.augment(p)
+        assert self.flow == self.g.get_max_flow()
         return self.flow
